@@ -30,19 +30,9 @@ class ShopController extends Controller
     {
         $category = Category::find()->where(['tid' => $tid, 'active' => 1, 'status' => 1])->one();
         
-        // поиск потомков категории
-        $category_list = new CategoryList('category');
-        $children = $category_list->get_children( $category->id, true );
-        $arr_ids = [$category->id];
-        $size = count($children);
-        for($i=0; $i<$size; ++$i){
-            $arr_ids[] = $children[$i]['id'];
-        }
-        // - - - поиск потомков категории
-        
         // получение товаров категории и подкатегорий
         if( $category->id ){
-            $goods_query = Goods::find()->where(['category_id' => $arr_ids, 'active' => 1, 'status' => 1]);
+            $goods_query = Goods::find()->where(['category_id' => $this->get_category_children_ids(), 'active' => 1, 'status' => 1]);
             // постраничная разбивка
             $count_query = clone $goods_query;
             $pages = new Pagination(['totalCount' => $count_query->count(), 
@@ -53,8 +43,6 @@ class ShopController extends Controller
                 ->all();
         }
         
-        //echo '<pre>';
-        //print_r($children);
         return $this->render('category', ['category' => $category,
                                           'goods' => $goods,
                                           'pages' => $pages]);
@@ -121,5 +109,23 @@ class ShopController extends Controller
             }
             return json_encode($response);
         }
+    }
+    
+    /**
+     * Получение ID всех потомков категории и самой категории
+     * @param int $id
+     * @return array
+     */
+    public function get_category_children_ids($id){
+        // поиск потомков категории
+        $category_list = new CategoryList('category');
+        $children = $category_list->get_children( $id, true );
+        $arr_ids = [$id];
+        $size = count($children);
+        for($i=0; $i<$size; ++$i){
+            $arr_ids[] = $children[$i]['id'];
+        }
+        // - - - поиск потомков категории
+        return $arr_ids;
     }
 }
